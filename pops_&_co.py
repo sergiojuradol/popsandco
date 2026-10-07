@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 # ---------------------------------------------------------
-# CONFIGURACIÓN INICIAL Y ESTILOS / ANIMACIONES CSS
+# CONFIGURACIÓN INICIAL Y ESTILOS CSS
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="POPS & CO - Sistema Integral Sincronizado",
