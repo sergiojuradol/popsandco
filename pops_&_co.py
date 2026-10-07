@@ -43,6 +43,14 @@ CATALOGO_CUENTAS = [
     "Honorarios a socios"
 ]
 
+# CLASIFICACIÓN ACADÉMICA DE CUENTAS PARA EL BALANCE GENERAL
+ACTIVO_CIRCULANTE = [
+    "Bancos", "Caja", "Clientes", "Almacén de materia prima",
+    "Almacén de material indirecto", "Almacén de producto terminado", "Deudores diversos"
+]
+ACTIVO_NO_CIRCULANTE = ["Mobiliario", "Maquinaria y Equipo de Fabricación"]
+PASIVO_CORTO_PLAZO = ["Proveedores", "Acreedores Bancarios", "Acreedores Diversos"]
+
 # ---------------------------------------------------------
 # INICIALIZACIÓN DE ESTADOS (MEMORIA TEMPORAL)
 # ---------------------------------------------------------
@@ -133,10 +141,10 @@ if modulo_principal == "🏠 Inicio":
         st.info("### ⚙️ Operativo y Producción\nControl de existencias de materia prima, empaques, lotes de fabricación y ventas físicas.")
     
     with col_b:
-        st.success("### 📖 Libro Diario\nRegistro de asientos contables con partida doble y llenado automático de Cuentas T.")
+        st.success("### 📖 Libro Diario\nRegistro de asientos contables con partida doble, parciales y llenado automático de Cuentas T.")
 
     with col_c:
-        st.warning("### 📈 Estado de Resultados\nConsulta financiera automática mensual con utilidades e ingresos consolidados.")
+        st.warning("### 🏛️ Estados Financieros\nEstado de Resultados y Balance General automático bajo el esquema académico tradicional.")
 
 # ---------------------------------------------------------
 # MÓDULO 1: OPERATIVO O MÓDULO DE PRODUCCIÓN
@@ -503,7 +511,7 @@ elif modulo_principal == "⚙️ MÓDULO 1: OPERATIVO / PRODUCCIÓN":
             st.info("👌 No hay mermas registradas por el momento.")
 
 # ---------------------------------------------------------
-# MÓDULO 2: CONTABILIDAD COMPLETA (PDF POPS & CO)
+# MÓDULO 2: CONTABILIDAD COMPLETA
 # ---------------------------------------------------------
 elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
     st.sidebar.markdown("---")
@@ -512,7 +520,8 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
         [
             "📖 Libro Diario",
             "⚖️ Cuentas T (Esquemas de Mayor)",
-            "📈 Estado de Resultados (Mensual)"
+            "📈 Estado de Resultados (Mensual)",
+            "🏛️ Balance General (Estado de Situación Financiera)"
         ]
     )
 
@@ -521,33 +530,31 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
     # -----------------------------------------------------
     if subm_cont == "📖 Libro Diario":
         st.header("📖 Libro Diario Contable")
-        st.caption("Registra tus asientos contables con partida doble exactos. Las Cuentas T y el Estado de Resultados se llenarán solos.")
+        st.caption("Registra tus asientos con partida doble, incluyendo el Asiento de Apertura inicial.")
 
         with st.expander("➕ Registrar Nuevo Asiento Contable", expanded=True):
             f_asiento = st.date_input("Fecha del Asiento", datetime.now())
             num_asiento_actual = st.number_input("Número de Asiento", value=int(st.session_state['num_asiento']), step=1)
-            concepto_general = st.text_input("Concepto / Descripción del Asiento", value="Compra de materia prima / Venta del día")
+            concepto_general = st.text_input("Concepto / Descripción del Asiento", value="Asiento de Apertura / Saldo Inicial de la Empresa")
 
             st.markdown("---")
             st.subheader("Movimientos del Asiento (Partida Doble)")
 
             col_c1, col_c2, col_c3, col_c4 = st.columns([3, 2, 2, 2])
-            
             with col_c1:
                 cuenta_debe = st.selectbox("Cuenta del DEBE (Cargo)", CATALOGO_CUENTAS, index=0)
             with col_c2:
                 parcial_debe = st.number_input("Parcial Debe ($)", min_value=0.0, value=0.0)
             with col_c3:
-                monto_debe = st.number_input("Monto DEBE ($)", min_value=0.0, value=100.0)
+                monto_debe = st.number_input("Monto DEBE ($)", min_value=0.0, value=1000.0)
 
             col_h1, col_h2, col_h3, col_h4 = st.columns([3, 2, 2, 2])
-            
             with col_h1:
-                cuenta_haber = st.selectbox("Cuenta del HABER (Abono)", CATALOGO_CUENTAS, index=1)
+                cuenta_haber = st.selectbox("Cuenta del HABER (Abono)", CATALOGO_CUENTAS, index=12) # Capital Social
             with col_h2:
                 parcial_haber = st.number_input("Parcial Haber ($)", min_value=0.0, value=0.0)
             with col_h3:
-                monto_haber = st.number_input("Monto HABER ($)", min_value=0.0, value=100.0)
+                monto_haber = st.number_input("Monto HABER ($)", min_value=0.0, value=1000.0)
 
             st.markdown("<br>", unsafe_allow_html=True)
             
@@ -559,7 +566,6 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
                 else:
                     f_str = f_asiento.strftime("%Y-%m-%d")
                     
-                    # Movimiento DEBE
                     st.session_state['libro_diario'].append({
                         "Fecha": f_str,
                         "No. Asiento": num_asiento_actual,
@@ -570,7 +576,6 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
                         "Haber": 0.0
                     })
                     
-                    # Movimiento HABER
                     st.session_state['libro_diario'].append({
                         "Fecha": f_str,
                         "No. Asiento": num_asiento_actual,
@@ -597,7 +602,7 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
             tot_debe = df_diario["Debe"].sum()
             tot_haber = df_diario["Haber"].sum()
             
-            st.info(f"⚖️ **Sumas Iguales Contables:** DEBE: **${tot_debe:.2f}** | HABER: **${tot_haber:.2f}**")
+            st.info(f"⚖️ **Sumas Iguales Contables:** DEBE: **${tot_debe:.2f}** \vert{} HABER: **${tot_haber:.2f}**")
         else:
             st.info("Aún no se han registrado asientos en el Libro Diario.")
 
@@ -606,7 +611,7 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
     # -----------------------------------------------------
     elif subm_cont == "⚖️ Cuentas T (Esquemas de Mayor)":
         st.header("⚖️ Cuentas T / Esquemas de Mayor")
-        st.caption("Generación automática a partir de los asientos registrados en el Libro Diario.")
+        st.caption("Generación automática a partir del Libro Diario.")
 
         if len(st.session_state['libro_diario']) == 0:
             st.info("Llena asientos en el Libro Diario para ver tus Cuentas T automáticamente.")
@@ -626,13 +631,12 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
 
                     with cols[idx % 2]:
                         st.markdown(f"### **{c}**")
-                        
                         df_t = df_c[["No. Asiento", "Debe", "Haber"]].copy()
                         df_t["Debe"] = df_t["Debe"].apply(lambda x: f"${x:.2f}" if x > 0 else "")
                         df_t["Haber"] = df_t["Haber"].apply(lambda x: f"${x:.2f}" if x > 0 else "")
 
                         st.table(df_t)
-                        st.markdown(f"**Suma Debe:** ${total_debe:.2f} | **Suma Haber:** ${total_haber:.2f}")
+                        st.markdown(f"**Suma Debe:** ${total_debe:.2f} \vert{} **Suma Haber:**${total_haber:.2f}")
                         
                         if saldo >= 0:
                             st.success(f"**Saldo Deudor:** ${saldo:.2f}")
@@ -654,7 +658,6 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
         else:
             df_d = pd.DataFrame(st.session_state['libro_diario'])
 
-            # Función para obtener saldo neto de una cuenta de estado
             def get_saldo(cuenta_nombre):
                 df_c = df_d[df_d["Cuenta"] == cuenta_nombre]
                 if len(df_c) == 0:
@@ -701,3 +704,122 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
                 st.success(f"### 🎉 Utilidad del Ejercicio: **${utilidad_neta:.2f}**")
             else:
                 st.error(f"### ⚠️ Pérdida del Ejercicio: **${utilidad_neta:.2f}**")
+
+    # -----------------------------------------------------
+    # BALANCE GENERAL ACADÉMICO
+    # -----------------------------------------------------
+    elif subm_cont == "🏛️ Balance General (Estado de Situación Financiera)":
+        st.header("🏛️ Balance General (Estado de Situación Financiera)")
+        st.caption("Estructura universitaria clásica: Activo = Pasivo + Capital Contable.")
+
+        if len(st.session_state['libro_diario']) == 0:
+            st.info("Registra el Asiento de Apertura y movimientos en el Libro Diario para calcular el Balance General.")
+        else:
+            df_d = pd.DataFrame(st.session_state['libro_diario'])
+
+            # Helper para obtener saldo deudor (Activos)
+            def saldo_deudor(cuenta):
+                df_c = df_d[df_d["Cuenta"] == cuenta]
+                return df_c["Debe"].sum() - df_c["Haber"].sum()
+
+            # Helper para obtener saldo acreedor (Pasivos y Capital)
+            def saldo_acreedor(cuenta):
+                df_c = df_d[df_d["Cuenta"] == cuenta]
+                return df_c["Haber"].sum() - df_c["Debe"].sum()
+
+            # 1. CÁLCULO DE ACTIVOS
+            tot_circulante = 0.0
+            filas_circulante = []
+            for c in ACTIVO_CIRCULANTE:
+                s = saldo_deudor(c)
+                if s != 0:
+                    filas_circulante.append({"Cuenta": c, "Saldo": f"${s:.2f}"})
+                    tot_circulante += s
+
+            tot_no_circulante = 0.0
+            filas_no_circulante = []
+            for c in ACTIVO_NO_CIRCULANTE:
+                s = saldo_deudor(c)
+                if s != 0:
+                    filas_no_circulante.append({"Cuenta": c, "Saldo": f"${s:.2f}"})
+                    tot_no_circulante += s
+
+            total_activo = tot_circulante + tot_no_circulante
+
+            # 2. CÁLCULO DE PASIVOS
+            tot_pasivo_cp = 0.0
+            filas_pasivo_cp = []
+            for c in PASIVO_CORTO_PLAZO:
+                s = saldo_acreedor(c)
+                if s != 0:
+                    filas_pasivo_cp.append({"Cuenta": c, "Saldo": f"${s:.2f}"})
+                    tot_pasivo_cp += s
+
+            total_pasivo = tot_pasivo_cp
+
+            # 3. CÁLCULO DE CAPITAL CONTABLE Y UTILIDAD AUTOMÁTICA
+            capital_social = saldo_acreedor("Capital Social")
+            
+            # Cálculo directo de Utilidad del Ejercicio
+            v_tot = (df_d[df_d["Cuenta"]=="Ventas"]["Haber"].sum() - df_d[df_d["Cuenta"]=="Ventas"]["Debe"].sum()) + \
+                    (df_d[df_d["Cuenta"]=="Otros productos"]["Haber"].sum() - df_d[df_d["Cuenta"]=="Otros productos"]["Debe"].sum())
+            c_tot = (df_d[df_d["Cuenta"]=="Costo de ventas"]["Debe"].sum() - df_d[df_d["Cuenta"]=="Costo de ventas"]["Haber"].sum()) + \
+                    (df_d[df_d["Cuenta"]=="Gastos de administración"]["Debe"].sum() - df_d[df_d["Cuenta"]=="Gastos de administración"]["Haber"].sum()) + \
+                    (df_d[df_d["Cuenta"]=="Gastos de venta"]["Debe"].sum() - df_d[df_d["Cuenta"]=="Gastos de venta"]["Haber"].sum()) + \
+                    (df_d[df_d["Cuenta"]=="Gastos financieros"]["Debe"].sum() - df_d[df_d["Cuenta"]=="Gastos financieros"]["Haber"].sum()) + \
+                    (df_d[df_d["Cuenta"]=="Honorarios a socios"]["Debe"].sum() - df_d[df_d["Cuenta"]=="Honorarios a socios"]["Haber"].sum())
+            
+            utilidad_ejercicio = v_tot - c_tot
+            total_capital = capital_social + utilidad_ejercicio
+
+            total_pasivo_mas_capital = total_pasivo + total_capital
+
+            # MOSTRAR EN FORMATO DE DOS COLUMNAS ACADÉMICAS (REPORTE / CUENTA)
+            col_act, col_pas_cap = st.columns(2)
+
+            with col_act:
+                st.markdown("### 🟦 ACTIVO")
+                st.markdown("#### **Activo Circulante**")
+                if len(filas_circulante) > 0:
+                    st.dataframe(pd.DataFrame(filas_circulante), use_container_width=True, hide_index=True)
+                else:
+                    st.caption("Sin saldos en Activo Circulante.")
+                st.markdown(f"**Subtotal Activo Circulante:** `${tot_circulante:.2f}`")
+
+                st.markdown("#### **Activo No Circulante**")
+                if len(filas_no_circulante) > 0:
+                    st.dataframe(pd.DataFrame(filas_no_circulante), use_container_width=True, hide_index=True)
+                else:
+                    st.caption("Sin saldos en Activo No Circulante.")
+                st.markdown(f"**Subtotal Activo No Circulante:** `${tot_no_circulante:.2f}`")
+
+                st.markdown("---")
+                st.metric("TOTAL ACTIVO", f"${total_activo:.2f}")
+
+            with col_pas_cap:
+                st.markdown("### 🟥 PASIVO")
+                st.markdown("#### **Pasivo a Corto Plazo**")
+                if len(filas_pasivo_cp) > 0:
+                    st.dataframe(pd.DataFrame(filas_pasivo_cp), use_container_width=True, hide_index=True)
+                else:
+                    st.caption("Sin saldos en Pasivo a Corto Plazo.")
+                st.markdown(f"**TOTAL PASIVO:** `${total_pasivo:.2f}`")
+
+                st.markdown("---")
+                st.markdown("### 🟩 CAPITAL CONTABLE")
+                filas_capital = [
+                    {"Cuenta": "Capital Social", "Saldo": f"${capital_social:.2f}"},
+                    {"Cuenta": "Utilidad / Pérdida del Ejercicio", "Saldo": f"${utilidad_ejercicio:.2f}"}
+                ]
+                st.dataframe(pd.DataFrame(filas_capital), use_container_width=True, hide_index=True)
+                st.markdown(f"**TOTAL CAPITAL CONTABLE:** `${total_capital:.2f}`")
+
+                st.markdown("---")
+                st.metric("TOTAL PASIVO + CAPITAL CONTABLE", f"${total_pasivo_mas_capital:.2f}")
+
+            st.markdown("---")
+            diferencia_cuadre = total_activo - total_pasivo_mas_capital
+            if abs(diferencia_cuadre) < 0.01:
+                st.success("✅ **¡BALANCE GENERAL CUADRADO PERFECTAMENTE!** (Activo = Pasivo + Capital Contable)")
+            else:
+                st.error(f"⚠️ **BALANCE DESCUADRADO POR: ${diferencia_cuadre:.2f}**. Revisa tus asientos en el Libro Diario.")
