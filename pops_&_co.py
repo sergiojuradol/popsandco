@@ -6,7 +6,7 @@ from datetime import datetime
 # CONFIGURACIÓN INICIAL Y ESTILOS CSS
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="POPS & CO - Sistema Integral Sincronizado",
+    page_title="POPS & CO - Sistema Contable Completo",
     page_icon="🍿",
     layout="wide"
 )
@@ -35,7 +35,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# CATÁLOGO DE CUENTAS Y SUB-CUENTAS (PARCIALES)
+# CATÁLOGO DE CUENTAS Y SUB-CUENTAS
 # ---------------------------------------------------------
 CATALOGO_CUENTAS = [
     "Bancos", "Caja", "Clientes", "Almacén de materia prima",
@@ -67,21 +67,19 @@ ACTIVO_NO_CIRCULANTE = ["Mobiliario", "Maquinaria y Equipo de Fabricación"]
 PASIVO_CORTO_PLAZO = ["Proveedores", "Acreedores Bancarios", "Acreedores Diversos"]
 
 # ---------------------------------------------------------
-# INICIALIZACIÓN DE ESTADOS (INVENTARIOS INICIALES EN CERO)
+# INICIALIZACIÓN ROBUSTA DE ESTADOS EN SESSION_STATE
 # ---------------------------------------------------------
 if 'inventario_mp' not in st.session_state:
     st.session_state['inventario_mp'] = {
-        "Maíz (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Aceite (L)": {"cant": 0.0, "unidad": "L", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Flavacol (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Sazonador Cheddar (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Sazonador Queso Jalapeño (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Sazonador Habanero (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
-        "Sazonador Adobo (kg)": {"cant": 0.0, "unidad": "kg", "costo_promedio": 0.0, "saldo_dinero": 0.0},
+        k: {"cant": 0.0, "unidad": k.split("(")[1].replace(")", ""), "costo_promedio": 0.0, "saldo_dinero": 0.0}
+        for k in SUB_CUENTAS_MP
     }
 
 if 'inventario_indirectos' not in st.session_state:
-    st.session_state['inventario_indirectos'] = {k: {"cant": 0, "unidad": "pzs", "costo_u": 0.0, "saldo_dinero": 0.0} for k in SUB_CUENTAS_INDIRECTOS}
+    st.session_state['inventario_indirectos'] = {
+        k: {"cant": 0, "unidad": "pzs", "costo_u": 0.0, "saldo_dinero": 0.0} 
+        for k in SUB_CUENTAS_INDIRECTOS
+    }
 
 if 'inventario_pt' not in st.session_state:
     st.session_state['inventario_pt'] = {
@@ -94,7 +92,6 @@ if 'inventario_pt' not in st.session_state:
     }
 
 if 'tarjetas_almacen_mp' not in st.session_state:
-    # Kárdex individual inicializado por cada insumo
     st.session_state['tarjetas_almacen_mp'] = {k: [] for k in SUB_CUENTAS_MP}
 
 if 'tarjetas_almacen_ind' not in st.session_state:
@@ -102,12 +99,12 @@ if 'tarjetas_almacen_ind' not in st.session_state:
 
 if 'libro_diario' not in st.session_state: st.session_state['libro_diario'] = []
 if 'num_asiento' not in st.session_state: st.session_state['num_asiento'] = 1
-if 'historial_lotes' not in st.session_state: st.session_state['historial_lotes'] = []
-if 'historial_mermas' not in st.session_state: st.session_state['historial_mermas'] = []
-if 'historial_ventas' not in st.session_state: st.session_state['historial_ventas'] = []
+
+if 'num_filas_debe' not in st.session_state: st.session_state['num_filas_debe'] = 1
+if 'num_filas_haber' not in st.session_state: st.session_state['num_filas_haber'] = 1
 
 # ---------------------------------------------------------
-# MENÚ LATERAL
+# MENÚ LATERAL Y NAVEGACIÓN
 # ---------------------------------------------------------
 st.sidebar.title("🍿 POPS & CO")
 modulo_principal = st.sidebar.selectbox(
@@ -120,9 +117,9 @@ modulo_principal = st.sidebar.selectbox(
 # ---------------------------------------------------------
 if modulo_principal == "🏠 Inicio":
     st.markdown("<h1 style='text-align: center; color: #E63946;'>🍿 POPS & CO 🍿</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; color: #555555; font-style: italic;'>« Sistema Contable Sincronizado en Tiempo Real »</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #555555; font-style: italic;'>« Sistema Contable Sincronizado »</h3>", unsafe_allow_html=True)
     st.markdown("---")
-    st.info("💡 **Nota del Sistema:** Para habilitar existencias en el inventario de materia prima o empaques, debes registrar primero el **Asiento de Apertura** o un **Asiento de Compra** en la sección del **Libro Diario**.")
+    st.info("💡 **Recordatorio Contable:** El inventario inicial inicia en $0.00. Para ingresar existencias a los almacenes, debes registrar el **Asiento de Apertura** o una compra en el Libro Diario.")
 
 # ---------------------------------------------------------
 # MÓDULO 1: OPERATIVO / PRODUCCIÓN
@@ -133,13 +130,12 @@ elif modulo_principal == "⚙️ MÓDULO 1: OPERATIVO / PRODUCCIÓN":
         [
             "🌾 Materia Prima (Valuación y Kárdex)",
             "📦 Inventario de Producto Terminado",
-            "🏭 Registrar Lote de Producción y Costos",
-            "🛍️ Punto de Venta y Margen de Ganancia"
+            "🏭 Registrar Lote de Producción"
         ]
     )
 
     if subm_op == "🌾 Materia Prima (Valuación y Kárdex)":
-        st.header("🌾 Tarjetas de Almacén y Kárdex Individual de Insumos")
+        st.header("🌾 Tarjetas de Almacén y Kárdex Individual")
         
         tab1, tab2 = st.tabs(["📊 Stock y Valuación Actual", "📜 Tarjetas de Almacén (Kárdex)"])
         
@@ -167,7 +163,7 @@ elif modulo_principal == "⚙️ MÓDULO 1: OPERATIVO / PRODUCCIÓN":
             st.dataframe(pd.DataFrame(filas_ind), use_container_width=True, hide_index=True)
 
         with tab2:
-            st.subheader("📜 Selecciona la Tarjeta de Almacén a Consultar")
+            st.subheader("📜 Consulta de Tarjetas de Almacén")
             tipo_k = st.radio("Tipo de Almacén", ["Materia Prima Directa", "Material Indirecto / Empaques"], horizontal=True)
             
             if tipo_k == "Materia Prima Directa":
@@ -193,37 +189,23 @@ elif modulo_principal == "⚙️ MÓDULO 1: OPERATIVO / PRODUCCIÓN":
         ]
         st.dataframe(pd.DataFrame(filas_pt), use_container_width=True, hide_index=True)
 
-    elif subm_op == "🏭 Registrar Lote de Producción y Costos":
+    elif subm_op == "🏭 Registrar Lote de Producción":
         st.header("⚙️ Registro de Lote de Producción")
-        st.caption("Al procesar el lote, el sistema consumirá de las existencias reales ingresadas mediante el Libro Diario.")
-        
         up_trad = st.number_input("Tradicional (120g)", min_value=0, value=10)
         up_ched = st.number_input("Cheddar (120g)", min_value=0, value=10)
         
-        if st.button("🚀 Procesar Lote de Producción"):
-            # Validar si hay materia prima disponible
+        if st.button("🚀 Procesar Lote"):
             cant_maiz = st.session_state['inventario_mp']['Maíz (kg)']['cant']
             if cant_maiz <= 0:
-                st.error("❌ No hay Maíz en existencia. Primero debes registrar el Asiento de Apertura o una Compra en el Libro Diario.")
+                st.error("❌ No hay Maíz suficiente en stock. Debes registrar una entrada primero en el Libro Diario.")
             else:
                 st.session_state['inventario_pt']["Tradicional (120g)"]["cant"] += up_trad
                 st.session_state['inventario_pt']["Cheddar (120g)"]["cant"] += up_ched
                 st.balloons()
-                st.success("✅ Lote registrado e inventario de PT actualizado.")
-
-    elif subm_op == "🛍️ Punto de Venta y Margen de Ganancia":
-        st.header("🛍️ Registro de Ventas")
-        sabor_venta = st.selectbox("Selecciona Producto", list(st.session_state['inventario_pt'].keys()))
-        cant_vender = st.number_input("Cantidad a vender", min_value=1, value=1)
-        if st.button("💵 Confirmar Venta"):
-            if st.session_state['inventario_pt'][sabor_venta]['cant'] >= cant_vender:
-                st.session_state['inventario_pt'][sabor_venta]['cant'] -= cant_vender
-                st.success("✅ Venta registrada exitosamente.")
-            else:
-                st.error("❌ Stock insuficiente en Producto Terminado.")
+                st.success("✅ Lote registrado en inventario.")
 
 # ---------------------------------------------------------
-# MÓDULO 2: CONTABILIDAD Y LIBRO DIARIO CON PARCIALES
+# MÓDULO 2: CONTABILIDAD
 # ---------------------------------------------------------
 elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
     subm_cont = st.sidebar.radio(
@@ -237,149 +219,147 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
     )
 
     if subm_cont == "📖 Libro Diario con Parciales":
-        st.header("📖 Libro Diario Contable con Sub-Cuentas (Parciales)")
-        st.caption("Registra asientos compuestos integrando Parciales para actualizar tarjetas de almacén automáticamente.")
+        st.header("📖 Libro Diario Contable con Parciales")
+        st.caption("Captura de asientos con desglose de subcuentas para actualizar las Tarjetas de Almacén.")
 
-        if 'borrador_debe' not in st.session_state:
-            st.session_state['borrador_debe'] = [{"Cuenta": CATALOGO_CUENTAS[3], "SubCuenta": SUB_CUENTAS_MP[0], "CantidadUds": 20.0, "Monto": 360.0}]
-        if 'borrador_haber' not in st.session_state:
-            st.session_state['borrador_haber'] = [{"Cuenta": CATALOGO_CUENTAS[12], "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": 360.0}]
-
-        with st.expander("➕ Registrar Nuevo Asiento Contable", expanded=True):
+        with st.form("form_asiento_contable", clear_on_submit=True):
             col_meta1, col_meta2 = st.columns([1, 3])
             f_asiento = col_meta1.date_input("Fecha", datetime.now())
             num_asiento_actual = col_meta1.number_input("Asiento #", value=int(st.session_state['num_asiento']), step=1)
-            concepto_general = col_meta2.text_input("Concepto", value="Asiento de Apertura - Saldo Inicial en Almacén")
+            concepto_general = col_meta2.text_input("Concepto General", value="Asiento de Apertura - Saldo Inicial")
 
             st.markdown("---")
-            col_d, col_h = st.columns(2)
+            col_debe, col_haber = st.columns(2)
 
-            # --- DEBE ---
-            with col_d:
+            # DEBE (CARGOS)
+            entradas_debe = []
+            with col_debe:
                 st.subheader("📥 DEBE (Cargos)")
-                nuevas_debe = []
-                for idx, item in enumerate(st.session_state['borrador_debe']):
-                    st.markdown(f"**Partida #{idx+1}**")
-                    cta = st.selectbox(f"Cuenta Debe #{idx+1}", CATALOGO_CUENTAS, index=CATALOGO_CUENTAS.index(item['Cuenta']) if item['Cuenta'] in CATALOGO_CUENTAS else 0, key=f"d_cta_{idx}")
+                for i in range(st.session_state['num_filas_debe']):
+                    st.markdown(f"**Partida #{i+1}**")
+                    cta = st.selectbox(f"Cuenta Debe #{i+1}", CATALOGO_CUENTAS, index=3 if i==0 else 0, key=f"f_debe_cta_{i}")
                     
                     sub = "N/A"
                     uds = 0.0
                     if cta == "Almacén de materia prima":
-                        sub = st.selectbox(f"Parcial / Insumo MP #{idx+1}", SUB_CUENTAS_MP, key=f"d_sub_{idx}")
-                        uds = st.number_input(f"Cantidad Unidades (kg/L) #{idx+1}", min_value=0.0, value=float(item['CantidadUds']), key=f"d_uds_{idx}")
+                        sub = st.selectbox(f"Insumo MP #{i+1}", SUB_CUENTAS_MP, key=f"f_debe_sub_mp_{i}")
+                        uds = st.number_input(f"Cantidad (kg/L) #{i+1}", min_value=0.0, value=20.0 if i==0 else 0.0, key=f"f_debe_uds_mp_{i}")
                     elif cta == "Almacén de material indirecto":
-                        sub = st.selectbox(f"Parcial / Empaque #{idx+1}", SUB_CUENTAS_INDIRECTOS, key=f"d_sub_ind_{idx}")
-                        uds = st.number_input(f"Cantidad Piezas #{idx+1}", min_value=0.0, value=float(item['CantidadUds']), key=f"d_uds_ind_{idx}")
+                        sub = st.selectbox(f"Empaque #{i+1}", SUB_CUENTAS_INDIRECTOS, key=f"f_debe_sub_ind_{i}")
+                        uds = st.number_input(f"Cantidad (Pzs) #{i+1}", min_value=0.0, value=100.0 if i==0 else 0.0, key=f"f_debe_uds_ind_{i}")
 
-                    monto = st.number_input(f"Monto DEBE $ #{idx+1}", min_value=0.0, value=float(item['Monto']), key=f"d_monto_{idx}")
-                    nuevas_debe.append({"Cuenta": cta, "SubCuenta": sub, "CantidadUds": uds, "Monto": monto})
+                    monto = st.number_input(f"Monto DEBE $ #{i+1}", min_value=0.0, value=360.0 if i==0 else 0.0, key=f"f_debe_monto_{i}")
+                    entradas_debe.append({"Cuenta": cta, "SubCuenta": sub, "CantidadUds": uds, "Monto": monto})
 
-                st.session_state['borrador_debe'] = nuevas_debe
-                if st.button("➕ Añadir Cargo (Debe)"):
-                    st.session_state['borrador_debe'].append({"Cuenta": CATALOGO_CUENTAS[0], "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": 0.0})
-                    st.rerun()
-
-            # --- HABER ---
-            with col_h:
+            # HABER (ABONOS)
+            entradas_haber = []
+            with col_haber:
                 st.subheader("📤 HABER (Abonos)")
-                nuevas_haber = []
-                for idx, item in enumerate(st.session_state['borrador_haber']):
-                    st.markdown(f"**Partida #{idx+1}**")
-                    cta = st.selectbox(f"Cuenta Haber #{idx+1}", CATALOGO_CUENTAS, index=CATALOGO_CUENTAS.index(item['Cuenta']) if item['Cuenta'] in CATALOGO_CUENTAS else 12, key=f"h_cta_{idx}")
-                    monto = st.number_input(f"Monto HABER $ #{idx+1}", min_value=0.0, value=float(item['Monto']), key=f"h_monto_{idx}")
-                    nuevas_haber.append({"Cuenta": cta, "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": monto})
-
-                st.session_state['borrador_haber'] = nuevas_haber
-                if st.button("➕ Añadir Abono (Haber)"):
-                    st.session_state['borrador_haber'].append({"Cuenta": CATALOGO_CUENTAS[12], "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": 0.0})
-                    st.rerun()
-
-            tot_d = sum(x['Monto'] for x in st.session_state['borrador_debe'])
-            tot_h = sum(x['Monto'] for x in st.session_state['borrador_haber'])
+                for i in range(st.session_state['num_filas_haber']):
+                    st.markdown(f"**Partida #{i+1}**")
+                    cta = st.selectbox(f"Cuenta Haber #{i+1}", CATALOGO_CUENTAS, index=12 if i==0 else 0, key=f"f_haber_cta_{i}")
+                    monto = st.number_input(f"Monto HABER $ #{i+1}", min_value=0.0, value=360.0 if i==0 else 0.0, key=f"f_haber_monto_{i}")
+                    entradas_haber.append({"Cuenta": cta, "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": monto})
 
             st.markdown("---")
-            m1, m2 = st.columns(2)
-            m1.metric("Total DEBE", f"${tot_d:,.2f}")
-            m2.metric("Total HABER", f"${tot_h:,.2f}")
+            btn_guardar = st.form_submit_button("💾 Guardar y Procesar Asiento Contable")
 
-            if st.button("💾 Guardar Asiento y Actualizar Tarjetas de Almacén"):
-                if round(abs(tot_d - tot_h), 2) != 0:
-                    st.error("❌ La partida doble no cuadra.")
-                elif tot_d == 0:
-                    st.error("❌ Los montos deben ser mayores a $0.00.")
-                else:
-                    f_str = f_asiento.strftime("%Y-%m-%d")
+        # Botones fuera del formulario para añadir/quitar filas
+        c_btn1, c_btn2, c_btn3, c_btn4 = st.columns(4)
+        if c_btn1.button("➕ Agregar Fila Debe"):
+            st.session_state['num_filas_debe'] += 1
+            st.rerun()
+        if c_btn2.button("➖ Quitar Fila Debe") and st.session_state['num_filas_debe'] > 1:
+            st.session_state['num_filas_debe'] -= 1
+            st.rerun()
+        if c_btn3.button("➕ Agregar Fila Haber"):
+            st.session_state['num_filas_haber'] += 1
+            st.rerun()
+        if c_btn4.button("➖ Quitar Fila Haber") and st.session_state['num_filas_haber'] > 1:
+            st.session_state['num_filas_haber'] -= 1
+            st.rerun()
 
-                    # Process Cargos (Debe)
-                    for d in st.session_state['borrador_debe']:
-                        if d['Monto'] > 0:
-                            st.session_state['libro_diario'].append({
-                                "Asiento": num_asiento_actual, "Fecha": f_str, "Concepto": concepto_general,
-                                "Cuenta Debe": d['Cuenta'], "Parcial (SubCuenta)": d['SubCuenta'],
-                                "Debe": d['Monto'], "Cuenta Haber": "", "Haber": 0.0
+        # Procesamiento al presionar el botón del formulario
+        if btn_guardar:
+            tot_d = sum(x['Monto'] for x in entradas_debe)
+            tot_h = sum(x['Monto'] for x in entradas_haber)
+
+            if round(abs(tot_d - tot_h), 2) != 0:
+                st.error(f"❌ La partida doble no cuadra. Total Debe: ${tot_d:.2f} \vert{} Total Haber:${tot_h:.2f}")
+            elif tot_d == 0:
+                st.error("❌ Los montos deben ser mayores a $0.00.")
+            else:
+                f_str = f_asiento.strftime("%Y-%m-%d")
+
+                # Procesar Debe
+                for d in entradas_debe:
+                    if d['Monto'] > 0:
+                        st.session_state['libro_diario'].append({
+                            "Asiento": num_asiento_actual, "Fecha": f_str, "Concepto": concepto_general,
+                            "Cuenta Debe": d['Cuenta'], "Parcial (SubCuenta)": d['SubCuenta'],
+                            "Debe": d['Monto'], "Cuenta Haber": "", "Haber": 0.0
+                        })
+
+                        # Actualizar Kárdex MP
+                        if d['Cuenta'] == "Almacén de materia prima" and d['SubCuenta'] in SUB_CUENTAS_MP:
+                            ins = d['SubCuenta']
+                            cant_in = d['CantidadUds']
+                            monto_in = d['Monto']
+
+                            curr = st.session_state['inventario_mp'][ins]
+                            n_cant = curr['cant'] + cant_in
+                            n_saldo = curr['saldo_dinero'] + monto_in
+                            n_prom = (n_saldo / n_cant) if n_cant > 0 else 0.0
+
+                            st.session_state['inventario_mp'][ins] = {
+                                "cant": n_cant, "unidad": curr['unidad'],
+                                "costo_promedio": n_prom, "saldo_dinero": n_saldo
+                            }
+
+                            st.session_state['tarjetas_almacen_mp'][ins].append({
+                                "Fecha": f_str, "Asiento": num_asiento_actual, "Concepto": concepto_general,
+                                "Entrada": cant_in, "Salida": 0.0, "Existencia": n_cant,
+                                "Costo Promedio": f"${n_prom:.2f}",
+                                "Debe ($)": f"${monto_in:.2f}", "Haber ($)": "$0.00", "Saldo ($)": f"${n_saldo:.2f}"
                             })
 
-                            # Actualización automática de Tarjeta de Almacén
-                            if d['Cuenta'] == "Almacén de materia prima" and d['SubCuenta'] in SUB_CUENTAS_MP:
-                                ins = d['SubCuenta']
-                                cant_ingresada = d['CantidadUds']
-                                monto_ingresado = d['Monto']
-                                
-                                curr_cant = st.session_state['inventario_mp'][ins]['cant']
-                                curr_saldo = st.session_state['inventario_mp'][ins]['saldo_dinero']
-                                
-                                nueva_cant = curr_cant + cant_ingresada
-                                nuevo_saldo = curr_saldo + monto_ingresado
-                                nuevo_costo_prom = (nuevo_saldo / nueva_cant) if nueva_cant > 0 else 0.0
+                        # Actualizar Kárdex Empaques
+                        elif d['Cuenta'] == "Almacén de material indirecto" and d['SubCuenta'] in SUB_CUENTAS_INDIRECTOS:
+                            mat = d['SubCuenta']
+                            pzs_in = int(d['CantidadUds'])
+                            monto_in = d['Monto']
 
-                                st.session_state['inventario_mp'][ins]['cant'] = nueva_cant
-                                st.session_state['inventario_mp'][ins]['saldo_dinero'] = nuevo_saldo
-                                st.session_state['inventario_mp'][ins]['costo_promedio'] = nuevo_costo_prom
+                            curr = st.session_state['inventario_indirectos'][mat]
+                            n_cant = curr['cant'] + pzs_in
+                            n_saldo = curr['saldo_dinero'] + monto_in
+                            n_cu = (n_saldo / n_cant) if n_cant > 0 else 0.0
 
-                                st.session_state['tarjetas_almacen_mp'][ins].append({
-                                    "Fecha": f_str, "Asiento": num_asiento_actual, "Concepto": concepto_general,
-                                    "Entrada (Uds)": cant_ingresada, "Salida (Uds)": 0.0, "Existencia (Uds)": nueva_cant,
-                                    "Costo Promedio": f"${nuevo_costo_prom:.2f}",
-                                    "Debe ($)": f"${monto_ingresado:.2f}", "Haber ($)": "$0.00", "Saldo ($)": f"${nuevo_saldo:.2f}"
-                                })
+                            st.session_state['inventario_indirectos'][mat] = {
+                                "cant": n_cant, "unidad": "pzs",
+                                "costo_u": n_cu, "saldo_dinero": n_saldo
+                            }
 
-                            elif d['Cuenta'] == "Almacén de material indirecto" and d['SubCuenta'] in SUB_CUENTAS_INDIRECTOS:
-                                mat = d['SubCuenta']
-                                pzs_ingresadas = int(d['CantidadUds'])
-                                monto_ingresado = d['Monto']
-
-                                curr_cant = st.session_state['inventario_indirectos'][mat]['cant']
-                                curr_saldo = st.session_state['inventario_indirectos'][mat]['saldo_dinero']
-
-                                nueva_cant = curr_cant + pzs_ingresadas
-                                nuevo_saldo = curr_saldo + monto_ingresado
-                                nuevo_costo_u = (nuevo_saldo / nueva_cant) if nueva_cant > 0 else 0.0
-
-                                st.session_state['inventario_indirectos'][mat]['cant'] = nueva_cant
-                                st.session_state['inventario_indirectos'][mat]['saldo_dinero'] = nuevo_saldo
-                                st.session_state['inventario_indirectos'][mat]['costo_u'] = nuevo_costo_u
-
-                                st.session_state['tarjetas_almacen_ind'][mat].append({
-                                    "Fecha": f_str, "Asiento": num_asiento_actual, "Concepto": concepto_general,
-                                    "Entrada (Pzs)": pzs_ingresadas, "Salida (Pzs)": 0, "Existencia (Pzs)": nueva_cant,
-                                    "Costo Unitario": f"${nuevo_costo_u:.2f}",
-                                    "Debe ($)": f"${monto_ingresado:.2f}", "Haber ($)": "$0.00", "Saldo ($)": f"${nuevo_saldo:.2f}"
-                                })
-
-                    # Process Abonos (Haber)
-                    for h in st.session_state['borrador_haber']:
-                        if h['Monto'] > 0:
-                            st.session_state['libro_diario'].append({
-                                "Asiento": num_asiento_actual, "Fecha": f_str, "Concepto": concepto_general,
-                                "Cuenta Debe": "", "Parcial (SubCuenta)": "", "Debe": 0.0,
-                                "Cuenta Haber": h['Cuenta'], "Haber": h['Monto']
+                            st.session_state['tarjetas_almacen_ind'][mat].append({
+                                "Fecha": f_str, "Asiento": num_asiento_actual, "Concepto": concepto_general,
+                                "Entrada": pzs_in, "Salida": 0, "Existencia": n_cant,
+                                "Costo Unitario": f"${n_cu:.2f}",
+                                "Debe ($)": f"${monto_in:.2f}", "Haber ($)": "$0.00", "Saldo ($)": f"${n_saldo:.2f}"
                             })
 
-                    st.session_state['num_asiento'] += 1
-                    st.session_state['borrador_debe'] = [{"Cuenta": CATALOGO_CUENTAS[0], "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": 0.0}]
-                    st.session_state['borrador_haber'] = [{"Cuenta": CATALOGO_CUENTAS[12], "SubCuenta": "N/A", "CantidadUds": 0.0, "Monto": 0.0}]
-                    st.success("✅ Asiento guardado. Tarjetas de almacén e inventarios actualizados en tiempo real.")
-                    st.rerun()
+                # Procesar Haber
+                for h in entradas_haber:
+                    if h['Monto'] > 0:
+                        st.session_state['libro_diario'].append({
+                            "Asiento": num_asiento_actual, "Fecha": f_str, "Concepto": concepto_general,
+                            "Cuenta Debe": "", "Parcial (SubCuenta)": "", "Debe": 0.0,
+                            "Cuenta Haber": h['Cuenta'], "Haber": h['Monto']
+                        })
+
+                st.session_state['num_asiento'] += 1
+                st.session_state['num_filas_debe'] = 1
+                st.session_state['num_filas_haber'] = 1
+                st.success("✅ Asiento guardado correctamente. Tarjetas de almacén e inventarios actualizados.")
+                st.rerun()
 
         if len(st.session_state['libro_diario']) > 0:
             st.subheader("📜 Libro Diario Registrado")
@@ -407,8 +387,43 @@ elif modulo_principal == "📊 MÓDULO 2: CONTABILIDAD":
 
     elif subm_cont == "📈 Estado de Resultados":
         st.header("📈 Estado de Resultados")
-        st.info("Visualización contable estándar en desarrollo.")
+        ventas = 0.0
+        costo_ventas = 0.0
+        gastos_admin = 0.0
+        gastos_venta = 0.0
+
+        if len(st.session_state['libro_diario']) > 0:
+            df = pd.DataFrame(st.session_state['libro_diario'])
+            ventas = df[df['Cuenta Haber'] == 'Ventas']['Haber'].sum()
+            costo_ventas = df[df['Cuenta Debe'] == 'Costo de ventas']['Debe'].sum()
+            gastos_admin = df[df['Cuenta Debe'] == 'Gastos de administración']['Debe'].sum()
+            gastos_venta = df[df['Cuenta Debe'] == 'Gastos de venta']['Debe'].sum()
+
+        utilidad_bruta = ventas - costo_ventas
+        utilidad_op = utilidad_bruta - (gastos_admin + gastos_venta)
+
+        st.metric("Ventas Totales", f"${ventas:.2f}")
+        st.metric("Costo de Ventas", f"${costo_ventas:.2f}")
+        st.metric("Utilidad Bruta", f"${utilidad_bruta:.2f}")
+        st.metric("Utilidad del Ejercicio", f"${utilidad_op:.2f}")
 
     elif subm_cont == "🏛️ Balance General":
         st.header("🏛️ Balance General")
-        st.info("Visualización contable estándar en desarrollo.")
+        saldos = {cuenta: 0.0 for cuenta in CATALOGO_CUENTAS}
+        if len(st.session_state['libro_diario']) > 0:
+            for mov in st.session_state['libro_diario']:
+                saldos[mov['Cuenta Debe']] += mov['Debe']
+                saldos[mov['Cuenta Haber']] -= mov['Haber']
+
+        tot_circulante = sum(saldos[c] for c in ACTIVO_CIRCULANTE if c in saldos)
+        tot_no_circulante = sum(saldos[c] for c in ACTIVO_NO_CIRCULANTE if c in saldos)
+        tot_activo = tot_circulante + tot_no_circulante
+
+        tot_pasivo = abs(sum(saldos[c] for c in PASIVO_CORTO_PLAZO if c in saldos))
+        capital_social = abs(saldos.get("Capital Social", 0.0))
+        tot_capital = capital_social
+        tot_pasivo_capital = tot_pasivo + tot_capital
+
+        col1, col2 = st.columns(2)
+        col1.write(f"### **TOTAL ACTIVO:** ${tot_activo:.2f}")
+        col2.write(f"### **TOTAL PASIVO + CAPITAL:** ${tot_pasivo_capital:.2f}")
