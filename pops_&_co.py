@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Configuración inicial de la aplicación
 st.set_page_config(
-    page_title="POPS & CO - Gestión de Inventarios y Operación",
+    page_title="POPS & CO - Gestión Operativa y Costos",
     page_icon="🍿",
     layout="wide"
 )
@@ -45,9 +45,22 @@ if 'inventario_pt' not in st.session_state:
     }
 
 if 'historial_movimientos_mp' not in st.session_state:
+    f_apertura = datetime.now().strftime("%Y-%m-%d %H:%M")
     st.session_state['historial_movimientos_mp'] = [
-        {"Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), "Insumo": "Maíz", "Tipo": "Entrada Inicial", "Cantidad": "20.0 kg", "Detalle": "Inventario inicial de apertura"},
-        {"Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), "Insumo": "Aceite", "Tipo": "Entrada Inicial", "Cantidad": "10.0 L", "Detalle": "Inventario inicial de apertura"}
+        {"Fecha": f_apertura, "Insumo": "Maíz", "Tipo": "Entrada Inicial", "Cantidad": "20.0 kg", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Aceite", "Tipo": "Entrada Inicial", "Cantidad": "10.0 L", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Flavacol", "Tipo": "Entrada Inicial", "Cantidad": "1000 g", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Sazonador Cheddar", "Tipo": "Entrada Inicial", "Cantidad": "1000 g", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Sazonador Queso Jalapeño", "Tipo": "Entrada Inicial", "Cantidad": "1000 g", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Sazonador Habanero", "Tipo": "Entrada Inicial", "Cantidad": "1000 g", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Sazonador Adobo", "Tipo": "Entrada Inicial", "Cantidad": "1000 g", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Bolsas Celofán 20x35 (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "2000 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 120g Tradicional (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "500 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 120g Cheddar (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "500 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 120g Queso Jalapeño (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "500 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 120g Habanero (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "500 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 120g Adobo (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "500 pzs", "Detalle": "Inventario inicial de apertura"},
+        {"Fecha": f_apertura, "Insumo": "Etiquetas 65g (pzs)", "Tipo": "Entrada Inicial", "Cantidad": "200 pzs", "Detalle": "Inventario inicial de apertura"},
     ]
 
 if 'historial_mermas' not in st.session_state:
@@ -64,10 +77,11 @@ modulo = st.sidebar.radio(
     "Navegación / Módulos:",
     [
         "📦 Inventario de Producto Terminado",
-        "🌾 Materia Prima y Historial de Movimientos",
+        "🌾 Materia Prima (Físico y Movimientos)",
         "🛒 Compras e Ingreso de Insumos",
         "🏭 Registrar Lote de Producción",
         "🛍️ Punto de Venta a Distribuidores",
+        "💰 Costos Promedio y Valuación de Almacén",
         "⚠️ Control de Mermas y Diferencias"
     ]
 )
@@ -90,7 +104,6 @@ if modulo == "📦 Inventario de Producto Terminado":
 
     with col2:
         st.subheader("✏️ Ajuste / Mermas de Producto Terminado")
-        st.caption("Usa este apartado si se dañó o venció algún paquete empacado.")
         prod_ajuste = st.selectbox("Selecciona Producto", list(st.session_state['inventario_pt'].keys()))
         cant_actual = st.session_state['inventario_pt'][prod_ajuste]['cant']
         
@@ -115,13 +128,13 @@ if modulo == "📦 Inventario de Producto Terminado":
                 st.success(f"✅ Se agregaron {cant_cambio} paquetes a {prod_ajuste}. Stock actual: {st.session_state['inventario_pt'][prod_ajuste]['cant']}")
 
 # ---------------------------------------------------------
-# MÓDULO 2: MATERIA PRIMA Y HISTORIAL DE MOVIMIENTOS
+# MÓDULO 2: MATERIA PRIMA (OPERATIVO PURO, SIN COSTOS)
 # ---------------------------------------------------------
-elif modulo == "🌾 Materia Prima y Historial de Movimientos":
-    st.header("🌾 Materias Primas e Empaques")
-    st.caption("Consulta de inventario de insumos e historial completo de entradas y salidas.")
+elif modulo == "🌾 Materia Prima (Físico y Movimientos)":
+    st.header("🌾 Materias Primas e Empaques (Existencias Físicas)")
+    st.caption("Consulta exclusiva del stock físico y la bitácora de movimientos.")
 
-    tab1, tab2 = st.tabs(["📋 Stock de Materia Prima e Empaques", "📜 Historial de Movimientos (Kárdex)"])
+    tab1, tab2 = st.tabs(["📋 Stock Físico de Insumos", "📜 Historial de Movimientos (Kárdex)"])
 
     with tab1:
         col_a, col_b = st.columns(2)
@@ -130,51 +143,69 @@ elif modulo == "🌾 Materia Prima y Historial de Movimientos":
             filas_mp = []
             for k, v in st.session_state['inventario_mp'].items():
                 if "cant_kg" in v:
-                    filas_mp.append({"Insumo": k, "Cantidad": f"{v['cant_kg']:.2f} kg", "Costo Promedied": f"${v['costo_promedio_kg']:.2f} / kg"})
+                    filas_mp.append({"Insumo": k, "Cantidad Disponible": f"{v['cant_kg']:.2f} kg"})
                 elif "cant_l" in v:
-                    filas_mp.append({"Insumo": k, "Cantidad": f"{v['cant_l']:.2f} L", "Costo Promedied": f"${v['costo_promedio_l']:.2f} / L"})
+                    filas_mp.append({"Insumo": k, "Cantidad Disponible": f"{v['cant_l']:.2f} L"})
                 else:
-                    costo_kg = v.get('costo_promedio_kg', 0)
-                    filas_mp.append({"Insumo": k, "Cantidad": f"{v['cant_g']:.0f} g", "Costo Promedied": f"${costo_kg:.2f} / kg"})
+                    filas_mp.append({"Insumo": k, "Cantidad Disponible": f"{v['cant_g']:.0f} g"})
             st.dataframe(pd.DataFrame(filas_mp), use_container_width=True, hide_index=True)
 
         with col_b:
             st.subheader("Empaques e Indirectos")
             filas_ind = []
             for k, v in st.session_state['inventario_indirectos'].items():
-                filas_ind.append({"Material": k, "Piezas": v['cant'], "Costo Unitario": f"${v['costo_u']:.2f}"})
+                filas_ind.append({"Material": k, "Piezas Disponibles": f"{v['cant']} pzs"})
             st.dataframe(pd.DataFrame(filas_ind), use_container_width=True, hide_index=True)
 
         st.markdown("---")
-        st.subheader("✏️ Ajuste / Salida Directa de Materia Prima")
+        st.subheader("✏️ Corregir Diferencias / Ajuste Físico")
+        
+        todos_insumos = list(st.session_state['inventario_mp'].keys()) + list(st.session_state['inventario_indirectos'].keys())
+        insumo_aj = st.selectbox("Insumo a ajustar", todos_insumos)
+        
         col_m1, col_m2, col_m3 = st.columns(3)
-        insumo_aj = col_m1.selectbox("Insumo a ajustar", list(st.session_state['inventario_mp'].keys()))
-        cant_aj = col_m2.number_input("Cantidad a restar/descontar", min_value=0.1, value=1.0, step=0.5)
-        motivo_aj = col_m3.text_input("Razón de baja", value="Derrames / Venta directa de insumo / Caducidad")
+        tipo_correc = col_m1.radio("Tipo de Ajuste", ["Descontar / Restar (Merma)", "Aumentar / Sumar (Sobrante)"], horizontal=True)
+        cant_aj = col_m2.number_input("Cantidad a modificar", min_value=0.01, value=1.0, step=0.5)
+        motivo_aj = col_m3.text_input("Razón del ajuste", value="Diferencia de conteo físico / Merma")
 
-        if st.button("Descontar Insumo del Inventario"):
+        if st.button("Aplicar Corregido de Inventario"):
             f_act = datetime.now().strftime("%Y-%m-%d %H:%M")
-            if "cant_kg" in st.session_state['inventario_mp'][insumo_aj]:
-                st.session_state['inventario_mp'][insumo_aj]['cant_kg'] -= cant_aj
-                txt_cant = f"-{cant_aj:.2f} kg"
-            elif "cant_l" in st.session_state['inventario_mp'][insumo_aj]:
-                st.session_state['inventario_mp'][insumo_aj]['cant_l'] -= cant_aj
-                txt_cant = f"-{cant_aj:.2f} L"
+            es_resta = "Descontar" in tipo_correc
+            factor = -1 if es_resta else 1
+
+            if insumo_aj in st.session_state['inventario_mp']:
+                if "cant_kg" in st.session_state['inventario_mp'][insumo_aj]:
+                    st.session_state['inventario_mp'][insumo_aj]['cant_kg'] += (cant_aj * factor)
+                    txt_cant = f"{'-' if es_resta else '+'}{cant_aj:.2f} kg"
+                elif "cant_l" in st.session_state['inventario_mp'][insumo_aj]:
+                    st.session_state['inventario_mp'][insumo_aj]['cant_l'] += (cant_aj * factor)
+                    txt_cant = f"{'-' if es_resta else '+'}{cant_aj:.2f} L"
+                else:
+                    st.session_state['inventario_mp'][insumo_aj]['cant_g'] += (cant_aj * 1000.0 * factor)
+                    txt_cant = f"{'-' if es_resta else '+'}{cant_aj * 1000.0:.0f} g"
             else:
-                st.session_state['inventario_mp'][insumo_aj]['cant_g'] -= (cant_aj * 1000.0)
-                txt_cant = f"-{cant_aj * 1000.0:.0f} g"
+                st.session_state['inventario_indirectos'][insumo_aj]['cant'] += int(cant_aj * factor)
+                txt_cant = f"{'-' if es_resta else '+'}{int(cant_aj)} pzs"
 
             st.session_state['historial_movimientos_mp'].append({
                 "Fecha": f_act,
                 "Insumo": insumo_aj,
-                "Tipo": "Salida / Baja Directa",
+                "Tipo": "Ajuste / Merma Directa" if es_resta else "Ajuste / Sobrante",
                 "Cantidad": txt_cant,
                 "Detalle": motivo_aj
             })
-            st.warning(f"⚠️ Se ajustó el stock de {insumo_aj}. Se registró en el historial de movimientos.")
+
+            if es_resta:
+                st.session_state['historial_mermas'].append({
+                    "Concepto": f"Ajuste de Insumo ({insumo_aj})",
+                    "Cantidad": txt_cant,
+                    "Detalle": motivo_aj
+                })
+
+            st.success(f"✅ ¡Stock físico de {insumo_aj} corregido correctamente!")
 
     with tab2:
-        st.subheader("📜 Bitácora de Entradas y Salidas de Materia Prima")
+        st.subheader("📜 Bitácora de Entradas y Salidas (Kárdex)")
         if len(st.session_state['historial_movimientos_mp']) > 0:
             df_mov = pd.DataFrame(st.session_state['historial_movimientos_mp'])
             st.dataframe(df_mov.iloc[::-1], use_container_width=True, hide_index=True)
@@ -186,7 +217,7 @@ elif modulo == "🌾 Materia Prima y Historial de Movimientos":
 # ---------------------------------------------------------
 elif modulo == "🛒 Compras e Ingreso de Insumos":
     st.header("🛒 Registrar Compra de Materia Prima / Empaques")
-    st.caption("Actualiza las existencias, registra el movimiento en el historial y recalcula el costo promedio.")
+    st.caption("Ingresa las nuevas compras. El costo promedio ponderado se recalculará automáticamente en el Módulo de Costos.")
 
     cat_compra = st.radio("Categoría de Compra", ["Materia Prima Directa", "Empaques / Etiquetas"], horizontal=True)
     f_act = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -199,7 +230,7 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
             kg_comprados = col1.number_input("Kilos de Maíz Comprados", min_value=1.0, value=20.0, step=1.0)
             precio_total = col2.number_input("Precio Total Pagado ($)", min_value=0.0, value=360.0)
 
-            if st.button("➕ Registar Compra de Maíz"):
+            if st.button("➕ Registrar Compra de Maíz"):
                 curr_kg = st.session_state['inventario_mp']['Maíz']['cant_kg']
                 curr_costo = st.session_state['inventario_mp']['Maíz']['costo_promedio_kg']
                 nuevo_total_kg = curr_kg + kg_comprados
@@ -210,9 +241,9 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
 
                 st.session_state['historial_movimientos_mp'].append({
                     "Fecha": f_act, "Insumo": "Maíz", "Tipo": "Entrada por Compra",
-                    "Cantidad": f"+{kg_comprados:.2f} kg", "Detalle": f"Compra de maíz por ${precio_total:.2f}"
+                    "Cantidad": f"+{kg_comprados:.2f} kg", "Detalle": f"Compra por ${precio_total:.2f}"
                 })
-                st.success(f"✅ ¡Maíz actualizado! Nuevo Stock: {nuevo_total_kg:.2f} kg")
+                st.success(f"✅ ¡Compra registrada! Maíz en stock: {nuevo_total_kg:.2f} kg | Nuevo Costo Promedio: ${nuevo_costo_prom:.2f}/kg")
 
         elif insumo_sel == "Aceite":
             col1, col2 = st.columns(2)
@@ -230,9 +261,9 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
 
                 st.session_state['historial_movimientos_mp'].append({
                     "Fecha": f_act, "Insumo": "Aceite", "Tipo": "Entrada por Compra",
-                    "Cantidad": f"+{litros_comprados:.2f} L", "Detalle": f"Compra de aceite por ${precio_total:.2f}"
+                    "Cantidad": f"+{litros_comprados:.2f} L", "Detalle": f"Compra por ${precio_total:.2f}"
                 })
-                st.success(f"✅ ¡Aceite actualizado! Nuevo Stock: {nuevo_total_l:.2f} L")
+                st.success(f"✅ ¡Compra registrada! Aceite en stock: {nuevo_total_l:.2f} L | Nuevo Costo Promedio: ${nuevo_costo_prom:.2f}/L")
 
         else:
             col1, col2 = st.columns(2)
@@ -253,7 +284,7 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
                     "Fecha": f_act, "Insumo": insumo_sel, "Tipo": "Entrada por Compra",
                     "Cantidad": f"+{gramos_nuevos:.0f} g", "Detalle": f"Compra por ${precio_total:.2f}"
                 })
-                st.success(f"✅ ¡{insumo_sel} actualizado! Nuevo Stock: {nuevo_total_g:.0f} g")
+                st.success(f"✅ ¡Compra registrada! {insumo_sel} en stock: {nuevo_total_g:.0f} g | Nuevo Costo Promedio: ${nuevo_costo_prom_kg:.2f}/kg")
 
     else:
         mat_sel = st.selectbox("Selecciona Material Indirecto", list(st.session_state['inventario_indirectos'].keys()))
@@ -269,7 +300,12 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
 
             st.session_state['inventario_indirectos'][mat_sel]['cant'] = nuevo_total_pzs
             st.session_state['inventario_indirectos'][mat_sel]['costo_u'] = nuevo_costo_u
-            st.success(f"✅ ¡{mat_sel} actualizado! Nuevo Stock: {nuevo_total_pzs} pzs")
+
+            st.session_state['historial_movimientos_mp'].append({
+                "Fecha": f_act, "Insumo": mat_sel, "Tipo": "Entrada por Compra",
+                "Cantidad": f"+{pzs_compradas} pzs", "Detalle": f"Compra de empaques por ${precio_total:.2f}"
+            })
+            st.success(f"✅ ¡Compra registrada! {mat_sel} en stock: {nuevo_total_pzs} pzs | Nuevo Costo Unitario: ${nuevo_costo_u:.2f}")
 
 # ---------------------------------------------------------
 # MÓDULO 4: REGISTRO DE LOTE Y CONEXIÓN MP -> PT
@@ -295,7 +331,7 @@ elif modulo == "🏭 Registrar Lote de Producción":
     aceite_teorico_l = total_pkts_general / 39.0
 
     st.markdown("---")
-    st.subheader("2. Consumo Medido Real (Conteo Físico)")
+    st.subheader("2. Consumo Medido Real (Ajuste Teórico vs Físico)")
     col_a, col_b = st.columns(2)
 
     with col_a:
@@ -314,28 +350,55 @@ elif modulo == "🏭 Registrar Lote de Producción":
         if total_pkts_general > 0:
             f_act = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-            # 1. Descuentos de Materia Prima e Historial de Salida
+            # 1. Descuentos e Historial de Materia Prima
             st.session_state['inventario_mp']["Maíz"]["cant_kg"] -= maiz_real
             st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Maíz", "Tipo": "Salida a Producción", "Cantidad": f"-{maiz_real:.2f} kg", "Detalle": f"Lote de {total_pkts_general} pkts"})
 
             st.session_state['inventario_mp']["Aceite"]["cant_l"] -= aceite_real
             st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Aceite", "Tipo": "Salida a Producción", "Cantidad": f"-{aceite_real:.2f} L", "Detalle": f"Lote de {total_pkts_general} pkts"})
 
-            st.session_state['inventario_mp']["Flavacol"]["cant_g"] -= flavacol_real_g
-            st.session_state['inventario_mp']["Sazonador Cheddar"]["cant_g"] -= saz_ched_real
-            st.session_state['inventario_mp']["Sazonador Queso Jalapeño"]["cant_g"] -= saz_qjal_real
-            st.session_state['inventario_mp']["Sazonador Habanero"]["cant_g"] -= saz_hab_real
-            st.session_state['inventario_mp']["Sazonador Adobo"]["cant_g"] -= saz_ado_real
+            if flavacol_real_g > 0:
+                st.session_state['inventario_mp']["Flavacol"]["cant_g"] -= flavacol_real_g
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Flavacol", "Tipo": "Salida a Producción", "Cantidad": f"-{flavacol_real_g:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
 
-            # 2. Descuento de Empaques
+            if saz_ched_real > 0:
+                st.session_state['inventario_mp']["Sazonador Cheddar"]["cant_g"] -= saz_ched_real
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Cheddar", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ched_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+
+            if saz_qjal_real > 0:
+                st.session_state['inventario_mp']["Sazonador Queso Jalapeño"]["cant_g"] -= saz_qjal_real
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Queso Jalapeño", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_qjal_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+
+            if saz_hab_real > 0:
+                st.session_state['inventario_mp']["Sazonador Habanero"]["cant_g"] -= saz_hab_real
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Habanero", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_hab_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+
+            if saz_ado_real > 0:
+                st.session_state['inventario_mp']["Sazonador Adobo"]["cant_g"] -= saz_ado_real
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Adobo", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ado_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+
+            # 2. Descuento e Historial de Empaques
             st.session_state['inventario_indirectos']["Bolsas Celofán 20x35 (pzs)"]["cant"] -= bolsas_reales
-            st.session_state['inventario_indirectos']["Etiquetas 120g Tradicional (pzs)"]["cant"] -= up_trad
-            st.session_state['inventario_indirectos']["Etiquetas 120g Cheddar (pzs)"]["cant"] -= up_ched
-            st.session_state['inventario_indirectos']["Etiquetas 120g Queso Jalapeño (pzs)"]["cant"] -= up_qjal
-            st.session_state['inventario_indirectos']["Etiquetas 120g Habanero (pzs)"]["cant"] -= up_hab
-            st.session_state['inventario_indirectos']["Etiquetas 120g Adobo (pzs)"]["cant"] -= up_ado
+            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Bolsas Celofán 20x35 (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{bolsas_reales} pzs", "Detalle": f"Lote de {total_pkts_general} pkts"})
+
+            if up_trad > 0:
+                st.session_state['inventario_indirectos']["Etiquetas 120g Tradicional (pzs)"]["cant"] -= up_trad
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Tradicional (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_trad} pzs", "Detalle": "Etiquetas aplicadas"})
+            if up_ched > 0:
+                st.session_state['inventario_indirectos']["Etiquetas 120g Cheddar (pzs)"]["cant"] -= up_ched
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Cheddar (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_ched} pzs", "Detalle": "Etiquetas aplicadas"})
+            if up_qjal > 0:
+                st.session_state['inventario_indirectos']["Etiquetas 120g Queso Jalapeño (pzs)"]["cant"] -= up_qjal
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Queso Jalapeño (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_qjal} pzs", "Detalle": "Etiquetas aplicadas"})
+            if up_hab > 0:
+                st.session_state['inventario_indirectos']["Etiquetas 120g Habanero (pzs)"]["cant"] -= up_hab
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Habanero (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_hab} pzs", "Detalle": "Etiquetas aplicadas"})
+            if up_ado > 0:
+                st.session_state['inventario_indirectos']["Etiquetas 120g Adobo (pzs)"]["cant"] -= up_ado
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Adobo (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_ado} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_65g > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 65g (pzs)"]["cant"] -= up_65g
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 65g (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_65g} pzs", "Detalle": "Etiquetas aplicadas"})
 
             # 3. Entrada Directa a Producto Terminado
             st.session_state['inventario_pt']["Tradicional (120g)"]["cant"] += up_trad
@@ -346,7 +409,7 @@ elif modulo == "🏭 Registrar Lote de Producción":
             st.session_state['inventario_pt']["Pedido Especial (65g)"]["cant"] += up_65g
 
             st.balloons()
-            st.success(f"✅ ¡Lote procesado! Se descontó la materia prima y entraron {total_pkts_general} paquetes al Producto Terminado.")
+            st.success(f"✅ ¡Lote procesado! Se agregaron {total_pkts_general} paquetes a Producto Terminado y se descontaron los insumos gastados.")
         else:
             st.error("Ingresa al menos 1 paquete producido.")
 
@@ -390,7 +453,62 @@ elif modulo == "🛍️ Punto de Venta a Distribuidores":
         st.dataframe(pd.DataFrame(st.session_state['historial_ventas']), use_container_width=True, hide_index=True)
 
 # ---------------------------------------------------------
-# MÓDULO 6: CONTROL DE MERMAS Y DIFERENCIAS
+# MÓDULO 6: COSTOS PROMEDIO Y VALUACIÓN DE ALMACÉN
+# ---------------------------------------------------------
+elif modulo == "💰 Costos Promedio y Valuación de Almacén":
+    st.header("💰 Módulo Financiero: Costo Promedio y Valuación")
+    st.caption("Cálculo automatizado del Costo Promedio Ponderado por insumo e importe total invertido en almacén.")
+
+    col_c1, col_c2 = st.columns(2)
+
+    with col_c1:
+        st.subheader("🌾 Costos Promedio - Materia Prima Directa")
+        filas_c_mp = []
+        tot_val_mp = 0.0
+
+        for k, v in st.session_state['inventario_mp'].items():
+            if "cant_kg" in v:
+                cant = v['cant_kg']
+                costo_u = v['costo_promedio_kg']
+                val_total = cant * costo_u
+                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} kg", "Costo Promedied": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
+            elif "cant_l" in v:
+                cant = v['cant_l']
+                costo_u = v['costo_promedio_l']
+                val_total = cant * costo_u
+                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} L", "Costo Promedied": f"${costo_u:.2f} / L", "Valor Retenido": f"${val_total:.2f}"})
+            else:
+                cant_kg = v['cant_g'] / 1000.0
+                costo_u = v['costo_promedio_kg']
+                val_total = cant_kg * costo_u
+                filas_c_mp.append({"Insumo": k, "Stock": f"{v['cant_g']:.0f} g", "Costo Promedied": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
+            
+            tot_val_mp += val_total
+
+        st.dataframe(pd.DataFrame(filas_c_mp), use_container_width=True, hide_index=True)
+        st.metric("Total Invertido en Materia Prima Directa", f"${tot_val_mp:.2f}")
+
+    with col_c2:
+        st.subheader("📦 Costos Unitarios - Empaques e Indirectos")
+        filas_c_ind = []
+        tot_val_ind = 0.0
+
+        for k, v in st.session_state['inventario_indirectos'].items():
+            cant = v['cant']
+            costo_u = v['costo_u']
+            val_total = cant * costo_u
+            filas_c_ind.append({"Material": k, "Stock": f"{cant} pzs", "Costo Unitario": f"${costo_u:.2f} / pza", "Valor Retenido": f"${val_total:.2f}"})
+            tot_val_ind += val_total
+
+        st.dataframe(pd.DataFrame(filas_c_ind), use_container_width=True, hide_index=True)
+        st.metric("Total Invertido en Empaques e Indirectos", f"${tot_val_ind:.2f}")
+
+    st.markdown("---")
+    st.subheader("📊 Resumen General del Valor del Almacén de Insumos")
+    st.markdown(f"### Valor Total del Inventario de Insumos: **${tot_val_mp + tot_val_ind:.2f} MXN**")
+
+# ---------------------------------------------------------
+# MÓDULO 7: CONTROL DE MERMAS Y DIFERENCIAS
 # ---------------------------------------------------------
 elif modulo == "⚠️ Control de Mermas y Diferencias":
     st.header("📋 Historial de Mermas y Desperdicios")
