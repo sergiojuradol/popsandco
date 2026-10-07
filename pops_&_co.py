@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Configuración inicial de la aplicación
 st.set_page_config(
-    page_title="POPS & CO - Gestión Operativa y Costos",
+    page_title="POPS & CO - Control Operativo, Costos y Producción",
     page_icon="🍿",
     layout="wide"
 )
@@ -36,12 +36,12 @@ if 'inventario_indirectos' not in st.session_state:
 
 if 'inventario_pt' not in st.session_state:
     st.session_state['inventario_pt'] = {
-        "Tradicional (120g)": {"cant": 0, "precio_dist": 14.00},
-        "Cheddar (120g)": {"cant": 0, "precio_dist": 17.00},
-        "Queso Jalapeño (120g)": {"cant": 0, "precio_dist": 17.00},
-        "Habanero (120g)": {"cant": 0, "precio_dist": 17.00},
-        "Adobado (120g)": {"cant": 0, "precio_dist": 17.00},
-        "Pedido Especial (65g)": {"cant": 0, "precio_dist": 10.00},
+        "Tradicional (120g)": {"cant": 0, "precio_dist": 14.00, "costo_directo_u": 5.20},
+        "Cheddar (120g)": {"cant": 0, "precio_dist": 17.00, "costo_directo_u": 7.10},
+        "Queso Jalapeño (120g)": {"cant": 0, "precio_dist": 17.00, "costo_directo_u": 7.05},
+        "Habanero (120g)": {"cant": 0, "precio_dist": 17.00, "costo_directo_u": 7.25},
+        "Adobado (120g)": {"cant": 0, "precio_dist": 17.00, "costo_directo_u": 7.05},
+        "Pedido Especial (65g)": {"cant": 0, "precio_dist": 10.00, "costo_directo_u": 3.80},
     }
 
 if 'historial_movimientos_mp' not in st.session_state:
@@ -69,7 +69,10 @@ if 'historial_mermas' not in st.session_state:
 if 'historial_ventas' not in st.session_state:
     st.session_state['historial_ventas'] = []
 
-st.title("🍿 POPS & CO - Control Operativo e Inventarios")
+if 'historial_lotes' not in st.session_state:
+    st.session_state['historial_lotes'] = []
+
+st.title("🍿 POPS & CO - Control Operativo, Costos y Producción")
 st.markdown("---")
 
 # Menú Lateral
@@ -79,9 +82,9 @@ modulo = st.sidebar.radio(
         "📦 Inventario de Producto Terminado",
         "🌾 Materia Prima (Físico y Movimientos)",
         "🛒 Compras e Ingreso de Insumos",
-        "🏭 Registrar Lote de Producción",
-        "🛍️ Punto de Venta a Distribuidores",
-        "💰 Costos Promedio y Valuación de Almacén",
+        "🏭 Registrar Lote de Producción y Costos Directos",
+        "🛍️ Punto de Venta y Margen de Ganancia",
+        "💰 Costos Promedio, BOM y Valuación",
         "⚠️ Control de Mermas y Diferencias"
     ]
 )
@@ -99,7 +102,12 @@ if modulo == "📦 Inventario de Producto Terminado":
         st.subheader("📊 Stock Actual de Paquetes")
         filas_pt = []
         for k, v in st.session_state['inventario_pt'].items():
-            filas_pt.append({"Sabor / Presentación": k, "Paquetes Disponibles": f"{v['cant']} pkts", "Precio Distribuidor": f"${v['precio_dist']:.2f}"})
+            filas_pt.append({
+                "Sabor / Presentación": k,
+                "Paquetes Disponibles": f"{v['cant']} pkts",
+                "Precio Distribuidor": f"${v['precio_dist']:.2f}",
+                "Costo Directo Estimado": f"${v.get('costo_directo_u', 0.0):.2f}"
+            })
         st.dataframe(pd.DataFrame(filas_pt), use_container_width=True, hide_index=True)
 
     with col2:
@@ -308,19 +316,19 @@ elif modulo == "🛒 Compras e Ingreso de Insumos":
             st.success(f"✅ ¡Compra registrada! {mat_sel} en stock: {nuevo_total_pzs} pzs | Nuevo Costo Unitario: ${nuevo_costo_u:.2f}")
 
 # ---------------------------------------------------------
-# MÓDULO 4: REGISTRO DE LOTE Y CONEXIÓN MP -> PT
+# MÓDULO 4: REGISTRO DE LOTE Y COSTOS DIRECTOS COMPLETO
 # ---------------------------------------------------------
-elif modulo == "🏭 Registrar Lote de Producción":
-    st.header("⚙️ Registro de Lote de Producción")
-    st.caption("Descuenta la materia prima consumida, genera el historial y envía los paquetes producidos a Producto Terminado.")
+elif modulo == "🏭 Registrar Lote de Producción y Costos Directos":
+    st.header("⚙️ Registro de Lote de Producción y Costos Directos")
+    st.caption("Calcula el costo total en dinero del lote (Materia Prima + Empaques + Mano de Obra + Gas) antes de procesar el inventario.")
 
-    st.subheader("1. Paquetes Producidos por Sabor (120g)")
+    st.subheader("1. Producción Planeada por Sabor (Paquetes Listos)")
     c1, c2, c3, c4, c5 = st.columns(5)
-    up_trad = c1.number_input("Tradicional", min_value=0, value=40)
-    up_ched = c2.number_input("Cheddar", min_value=0, value=65)
-    up_qjal = c3.number_input("Queso Jalapeño", min_value=0, value=25)
-    up_hab = c4.number_input("Habanero", min_value=0, value=45)
-    up_ado = c5.number_input("Adobado", min_value=0, value=35)
+    up_trad = c1.number_input("Tradicional (120g)", min_value=0, value=40)
+    up_ched = c2.number_input("Cheddar (120g)", min_value=0, value=65)
+    up_qjal = c3.number_input("Queso Jalapeño (120g)", min_value=0, value=25)
+    up_hab = c4.number_input("Habanero (120g)", min_value=0, value=45)
+    up_ado = c5.number_input("Adobado (120g)", min_value=0, value=35)
 
     up_65g = st.number_input("Paquetes de Pedido Especial (65g - Opcional)", min_value=0, value=0)
 
@@ -331,7 +339,7 @@ elif modulo == "🏭 Registrar Lote de Producción":
     aceite_teorico_l = total_pkts_general / 39.0
 
     st.markdown("---")
-    st.subheader("2. Consumo Medido Real (Ajuste Teórico vs Físico)")
+    st.subheader("2. Consumo Real de Insumos")
     col_a, col_b = st.columns(2)
 
     with col_a:
@@ -346,61 +354,101 @@ elif modulo == "🏭 Registrar Lote de Producción":
         saz_hab_real = st.number_input("Sazonador Habanero Usado (g)", min_value=0.0, value=up_hab * (1000.0 / 85.0))
         saz_ado_real = st.number_input("Sazonador Adobo Usado (g)", min_value=0.0, value=up_ado * (1000.0 / 85.0))
 
-    if st.button("🚀 Procesar Lote: Descontar MP y Entrar a Producto Terminado"):
+    st.markdown("---")
+    st.subheader("3. Mano de Obra Directa (MOD) y Servicios (Gas) para este Lote")
+    col_mod1, col_mod2, col_gas = st.columns(3)
+
+    horas_mod = col_mod1.number_input("Horas de Trabajo Invertidas", min_value=0.0, value=3.0, step=0.5)
+    costo_hora_mod = col_mod2.number_input("Costo por Hora de Mano de Obra ($)", min_value=0.0, value=60.0, step=5.0)
+    costo_gas_lote = col_gas.number_input("Costo Estimado de Gas/Energía ($)", min_value=0.0, value=85.0, step=5.0)
+
+    costo_total_mod = horas_mod * costo_hora_mod
+
+    # CÁLCULO PREVIO EN DINERO USANDO COSTOS PROMEDIO
+    costo_maiz_dinero = maiz_real * st.session_state['inventario_mp']['Maíz']['costo_promedio_kg']
+    costo_aceite_dinero = aceite_real * st.session_state['inventario_mp']['Aceite']['costo_promedio_l']
+    costo_flava_dinero = (flavacol_real_g / 1000.0) * st.session_state['inventario_mp']['Flavacol']['costo_promedio_kg']
+    costo_ched_dinero = (saz_ched_real / 1000.0) * st.session_state['inventario_mp']['Sazonador Cheddar']['costo_promedio_kg']
+    costo_qjal_dinero = (saz_qjal_real / 1000.0) * st.session_state['inventario_mp']['Sazonador Queso Jalapeño']['costo_promedio_kg']
+    costo_hab_dinero = (saz_hab_real / 1000.0) * st.session_state['inventario_mp']['Sazonador Habanero']['costo_promedio_kg']
+    costo_ado_dinero = (saz_ado_real / 1000.0) * st.session_state['inventario_mp']['Sazonador Adobo']['costo_promedio_kg']
+
+    tot_mp_dinero = costo_maiz_dinero + costo_aceite_dinero + costo_flava_dinero + costo_ched_dinero + costo_qjal_dinero + costo_hab_dinero + costo_ado_dinero
+
+    costo_bolsas_dinero = bolsas_reales * st.session_state['inventario_indirectos']['Bolsas Celofán 20x35 (pzs)']['costo_u']
+    costo_etiq_dinero = (
+        (up_trad * st.session_state['inventario_indirectos']['Etiquetas 120g Tradicional (pzs)']['costo_u']) +
+        (up_ched * st.session_state['inventario_indirectos']['Etiquetas 120g Cheddar (pzs)']['costo_u']) +
+        (up_qjal * st.session_state['inventario_indirectos']['Etiquetas 120g Queso Jalapeño (pzs)']['costo_u']) +
+        (up_hab * st.session_state['inventario_indirectos']['Etiquetas 120g Habanero (pzs)']['costo_u']) +
+        (up_ado * st.session_state['inventario_indirectos']['Etiquetas 120g Adobo (pzs)']['costo_u']) +
+        (up_65g * st.session_state['inventario_indirectos']['Etiquetas 65g (pzs)']['costo_u'])
+    )
+
+    tot_empaques_dinero = costo_bolsas_dinero + costo_etiq_dinero
+    costo_total_lote_dinero = tot_mp_dinero + tot_empaques_dinero + costo_total_mod + costo_gas_lote
+    costo_promedio_por_bolsa = (costo_total_lote_dinero / total_pkts_general) if total_pkts_general > 0 else 0.0
+
+    st.markdown("---")
+    st.subheader("💰 Resumen Previo de Costos del Lote (Antes de Confirmar)")
+
+    col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+    col_res1.metric("Materia Prima Directa", f"${tot_mp_dinero:.2f}")
+    col_res2.metric("Empaques y Etiquetas", f"${tot_empaques_dinero:.2f}")
+    col_res3.metric("Mano de Obra y Gas", f"${costo_total_mod + costo_gas_lote:.2f}")
+    col_res4.metric("Costo Total en Dinero", f"${costo_total_lote_dinero:.2f}")
+
+    st.info(f"💡 **Costo Promedio Real Directo por Paquete:** **${costo_promedio_por_bolsa:.2f} / paquete** para un total de **{total_pkts_general} paquetes**.")
+
+    if st.button("🚀 Procesar Lote: Descontar Inventarios y Registrar Costos"):
         if total_pkts_general > 0:
             f_act = datetime.now().strftime("%Y-%m-%d %H:%M")
 
             # 1. Descuentos e Historial de Materia Prima
             st.session_state['inventario_mp']["Maíz"]["cant_kg"] -= maiz_real
-            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Maíz", "Tipo": "Salida a Producción", "Cantidad": f"-{maiz_real:.2f} kg", "Detalle": f"Lote de {total_pkts_general} pkts"})
+            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Maíz", "Tipo": "Salida a Producción", "Cantidad": f"-{maiz_real:.2f} kg", "Detalle": f"Lote ({total_pkts_general} pkts) - Costo: ${costo_maiz_dinero:.2f}"})
 
             st.session_state['inventario_mp']["Aceite"]["cant_l"] -= aceite_real
-            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Aceite", "Tipo": "Salida a Producción", "Cantidad": f"-{aceite_real:.2f} L", "Detalle": f"Lote de {total_pkts_general} pkts"})
+            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Aceite", "Tipo": "Salida a Producción", "Cantidad": f"-{aceite_real:.2f} L", "Detalle": f"Lote ({total_pkts_general} pkts) - Costo: ${costo_aceite_dinero:.2f}"})
 
             if flavacol_real_g > 0:
                 st.session_state['inventario_mp']["Flavacol"]["cant_g"] -= flavacol_real_g
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Flavacol", "Tipo": "Salida a Producción", "Cantidad": f"-{flavacol_real_g:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Flavacol", "Tipo": "Salida a Producción", "Cantidad": f"-{flavacol_real_g:.0f} g", "Detalle": f"Costo: ${costo_flava_dinero:.2f}"})
 
             if saz_ched_real > 0:
                 st.session_state['inventario_mp']["Sazonador Cheddar"]["cant_g"] -= saz_ched_real
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Cheddar", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ched_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Cheddar", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ched_real:.0f} g", "Detalle": f"Costo: ${costo_ched_dinero:.2f}"})
 
             if saz_qjal_real > 0:
                 st.session_state['inventario_mp']["Sazonador Queso Jalapeño"]["cant_g"] -= saz_qjal_real
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Queso Jalapeño", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_qjal_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Queso Jalapeño", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_qjal_real:.0f} g", "Detalle": f"Costo: ${costo_qjal_dinero:.2f}"})
 
             if saz_hab_real > 0:
                 st.session_state['inventario_mp']["Sazonador Habanero"]["cant_g"] -= saz_hab_real
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Habanero", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_hab_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Habanero", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_hab_real:.0f} g", "Detalle": f"Costo: ${costo_hab_dinero:.2f}"})
 
             if saz_ado_real > 0:
                 st.session_state['inventario_mp']["Sazonador Adobo"]["cant_g"] -= saz_ado_real
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Adobo", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ado_real:.0f} g", "Detalle": f"Lote de {total_pkts_general} pkts"})
+                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Sazonador Adobo", "Tipo": "Salida a Producción", "Cantidad": f"-{saz_ado_real:.0f} g", "Detalle": f"Costo: ${costo_ado_dinero:.2f}"})
 
             # 2. Descuento e Historial de Empaques
             st.session_state['inventario_indirectos']["Bolsas Celofán 20x35 (pzs)"]["cant"] -= bolsas_reales
-            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Bolsas Celofán 20x35 (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{bolsas_reales} pzs", "Detalle": f"Lote de {total_pkts_general} pkts"})
+            st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Bolsas Celofán 20x35 (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{bolsas_reales} pzs", "Detalle": f"Costo: ${costo_bolsas_dinero:.2f}"})
 
             if up_trad > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 120g Tradicional (pzs)"]["cant"] -= up_trad
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Tradicional (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_trad} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_ched > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 120g Cheddar (pzs)"]["cant"] -= up_ched
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Cheddar (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_ched} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_qjal > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 120g Queso Jalapeño (pzs)"]["cant"] -= up_qjal
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Queso Jalapeño (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_qjal} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_hab > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 120g Habanero (pzs)"]["cant"] -= up_hab
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Habanero (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_hab} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_ado > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 120g Adobo (pzs)"]["cant"] -= up_ado
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 120g Adobo (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_ado} pzs", "Detalle": "Etiquetas aplicadas"})
             if up_65g > 0:
                 st.session_state['inventario_indirectos']["Etiquetas 65g (pzs)"]["cant"] -= up_65g
-                st.session_state['historial_movimientos_mp'].append({"Fecha": f_act, "Insumo": "Etiquetas 65g (pzs)", "Tipo": "Salida a Producción", "Cantidad": f"-{up_65g} pzs", "Detalle": "Etiquetas aplicadas"})
 
-            # 3. Entrada Directa a Producto Terminado
+            # 3. Entrada Directa a Producto Terminado y Actualización de Costo Directo Unitario
             st.session_state['inventario_pt']["Tradicional (120g)"]["cant"] += up_trad
             st.session_state['inventario_pt']["Cheddar (120g)"]["cant"] += up_ched
             st.session_state['inventario_pt']["Queso Jalapeño (120g)"]["cant"] += up_qjal
@@ -408,30 +456,52 @@ elif modulo == "🏭 Registrar Lote de Producción":
             st.session_state['inventario_pt']["Adobado (120g)"]["cant"] += up_ado
             st.session_state['inventario_pt']["Pedido Especial (65g)"]["cant"] += up_65g
 
+            # Guardar en Historial de Lotes
+            st.session_state['historial_lotes'].append({
+                "Fecha": f_act,
+                "Paquetes Producidos": total_pkts_general,
+                "Costo MP": f"${tot_mp_dinero:.2f}",
+                "Costo Empaques": f"${tot_empaques_dinero:.2f}",
+                "Mano de Obra": f"${costo_total_mod:.2f}",
+                "Gas/Servicios": f"${costo_gas_lote:.2f}",
+                "Costo Total Lote": f"${costo_total_lote_dinero:.2f}",
+                "Costo Promedio/Bolsa": f"${costo_promedio_por_bolsa:.2f}"
+            })
+
             st.balloons()
-            st.success(f"✅ ¡Lote procesado! Se agregaron {total_pkts_general} paquetes a Producto Terminado y se descontaron los insumos gastados.")
+            st.success(f"✅ ¡Lote procesado! Costo total del lote: ${costo_total_lote_dinero:.2f} | Costo por paquete: ${costo_promedio_por_bolsa:.2f}")
         else:
             st.error("Ingresa al menos 1 paquete producido.")
 
 # ---------------------------------------------------------
-# MÓDULO 5: PUNTO DE VENTA A DISTRIBUIDORES
+# MÓDULO 5: PUNTO DE VENTA Y MARGEN DE GANANCIA
 # ---------------------------------------------------------
-elif modulo == "🛍️ Punto de Venta a Distribuidores":
-    st.header("🛍️ Registro de Ventas a Distribuidores")
-    st.caption("Descuenta automáticamente los paquetes listos del inventario de Producto Terminado.")
+elif modulo == "🛍️ Punto de Venta y Margen de Ganancia":
+    st.header("🛍️ Registro de Ventas a Distribuidores y Margen Bruto")
+    st.caption("Verifica el margen de contribución real de cada venta restando el costo directo de producción.")
 
     sabor_venta = st.selectbox("Selecciona Producto / Sabor", list(st.session_state['inventario_pt'].keys()))
     stock_disp = st.session_state['inventario_pt'][sabor_venta]['cant']
     precio_u = st.session_state['inventario_pt'][sabor_venta]['precio_dist']
+    costo_dir_u = st.session_state['inventario_pt'][sabor_venta].get('costo_directo_u', 5.50)
 
-    st.info(f"💡 Disponible en Producto Terminado: **{stock_disp} paquetes** | Precio Distribuidor: **${precio_u:.2f} / pza**")
+    margen_u = precio_u - costo_dir_u
+    pct_margen = (margen_u / precio_u) * 100 if precio_u > 0 else 0
+
+    col_info1, col_info2, col_info3 = st.columns(3)
+    col_info1.info(f"📦 Disponible: **{stock_disp} pkts**")
+    col_info2.success(f"💵 Precio Distribuidor: **${precio_u:.2f}**")
+    col_info3.warning(f"📊 Margen Bruto Unitario: **${margen_u:.2f} ({pct_margen:.1f}%)**")
 
     col_v1, col_v2 = st.columns(2)
     cant_vender = col_v1.number_input("Cantidad a Vender (pkts)", min_value=1, max_value=max(1, stock_disp), value=min(10, max(1, stock_disp)))
     cliente = col_v2.text_input("Nombre de Distribuidor / Cliente", value="Distribuidor General")
 
     total_cobrar = cant_vender * precio_u
-    st.markdown(f"### Total a Cobrar: **${total_cobrar:.2f}**")
+    total_costo_venta = cant_vender * costo_dir_u
+    ganancia_bruta_total = total_cobrar - total_costo_venta
+
+    st.markdown(f"### Total Venta: **${total_cobrar:.2f}** | Ganancia Bruta Real: **${ganancia_bruta_total:.2f}**")
 
     if st.button("💵 Confirmar y Registrar Venta"):
         if stock_disp >= cant_vender:
@@ -441,9 +511,11 @@ elif modulo == "🛍️ Punto de Venta a Distribuidores":
                 "Cliente": cliente,
                 "Producto": sabor_venta,
                 "Cantidad": cant_vender,
-                "Total Cobrado": f"${total_cobrar:.2f}"
+                "Total Cobrado": f"${total_cobrar:.2f}",
+                "Costo de Venta": f"${total_costo_venta:.2f}",
+                "Ganancia Bruta": f"${ganancia_bruta_total:.2f}"
             })
-            st.success(f"✅ ¡Venta registrada! Se descontaron {cant_vender} pkts de {sabor_venta}.")
+            st.success(f"✅ ¡Venta registrada! Se descontaron {cant_vender} pkts de {sabor_venta}. Ganancia generada: ${ganancia_bruta_total:.2f}")
         else:
             st.error("No hay suficiente stock en producto terminado para cubrir esta venta.")
 
@@ -453,11 +525,11 @@ elif modulo == "🛍️ Punto de Venta a Distribuidores":
         st.dataframe(pd.DataFrame(st.session_state['historial_ventas']), use_container_width=True, hide_index=True)
 
 # ---------------------------------------------------------
-# MÓDULO 6: COSTOS PROMEDIO Y VALUACIÓN DE ALMACÉN
+# MÓDULO 6: COSTOS PROMEDIO, BOM Y VALUACIÓN DE ALMACÉN
 # ---------------------------------------------------------
-elif modulo == "💰 Costos Promedio y Valuación de Almacén":
-    st.header("💰 Módulo Financiero: Costo Promedio y Valuación")
-    st.caption("Cálculo automatizado del Costo Promedio Ponderado por insumo e importe total invertido en almacén.")
+elif modulo == "💰 Costos Promedio, BOM y Valuación":
+    st.header("💰 Módulo Financiero: Costos Promedio y BOM por Receta")
+    st.caption("Estructura de costos unitarios de insumos y evaluación de Lista de Materiales (BOM) por receta.")
 
     col_c1, col_c2 = st.columns(2)
 
@@ -471,22 +543,22 @@ elif modulo == "💰 Costos Promedio y Valuación de Almacén":
                 cant = v['cant_kg']
                 costo_u = v['costo_promedio_kg']
                 val_total = cant * costo_u
-                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} kg", "Costo Promedied": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
+                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} kg", "Costo Promedio": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
             elif "cant_l" in v:
                 cant = v['cant_l']
                 costo_u = v['costo_promedio_l']
                 val_total = cant * costo_u
-                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} L", "Costo Promedied": f"${costo_u:.2f} / L", "Valor Retenido": f"${val_total:.2f}"})
+                filas_c_mp.append({"Insumo": k, "Stock": f"{cant:.2f} L", "Costo Promedio": f"${costo_u:.2f} / L", "Valor Retenido": f"${val_total:.2f}"})
             else:
                 cant_kg = v['cant_g'] / 1000.0
                 costo_u = v['costo_promedio_kg']
                 val_total = cant_kg * costo_u
-                filas_c_mp.append({"Insumo": k, "Stock": f"{v['cant_g']:.0f} g", "Costo Promedied": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
+                filas_c_mp.append({"Insumo": k, "Stock": f"{v['cant_g']:.0f} g", "Costo Promedio": f"${costo_u:.2f} / kg", "Valor Retenido": f"${val_total:.2f}"})
             
             tot_val_mp += val_total
 
         st.dataframe(pd.DataFrame(filas_c_mp), use_container_width=True, hide_index=True)
-        st.metric("Total Invertido en Materia Prima Directa", f"${tot_val_mp:.2f}")
+        st.metric("Total Invertido en Materia Prima", f"${tot_val_mp:.2f}")
 
     with col_c2:
         st.subheader("📦 Costos Unitarios - Empaques e Indirectos")
@@ -501,11 +573,14 @@ elif modulo == "💰 Costos Promedio y Valuación de Almacén":
             tot_val_ind += val_total
 
         st.dataframe(pd.DataFrame(filas_c_ind), use_container_width=True, hide_index=True)
-        st.metric("Total Invertido en Empaques e Indirectos", f"${tot_val_ind:.2f}")
+        st.metric("Total Invertido en Empaques", f"${tot_val_ind:.2f}")
 
     st.markdown("---")
-    st.subheader("📊 Resumen General del Valor del Almacén de Insumos")
-    st.markdown(f"### Valor Total del Inventario de Insumos: **${tot_val_mp + tot_val_ind:.2f} MXN**")
+    st.subheader("📜 Historico de Lotes Procesados y Costos Totales")
+    if len(st.session_state['historial_lotes']) > 0:
+        st.dataframe(pd.DataFrame(st.session_state['historial_lotes']), use_container_width=True, hide_index=True)
+    else:
+        st.info("Aún no se han registrado lotes de producción.")
 
 # ---------------------------------------------------------
 # MÓDULO 7: CONTROL DE MERMAS Y DIFERENCIAS
